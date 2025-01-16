@@ -176,59 +176,57 @@ $dadosPolicialResponse = buscarDadosPolicial($pdo, $matricula);
                     </select>
                 </div>
 
-                <!-- Campo para a Unidade -->
                 <div class="col-md-4">
                     <label for="unidade" class="form-label">Unidade</label>
                     <select class="form-select" id="unidade" name="unidade" disabled>
                         <option value="">Selecione</option>
                     </select>
                 </div>
-            </div>
 
 
-            <!-- férias -->
-            <div id="campoFerias" style="display: none; border: 1px solid #ccc; padding: 10px; margin-top: 20px;">
-                <div class="row mb-3">
-                    <div class="col-md-4">
-                        <label for="dataInicial" class="form-label">Data Inicial</label>
-                        <input type="date" class="form-control" id="dataInicial" name="dataInicial">
-                    </div>
-                    <div class="col-md-4">
-                        <label for="dataFinal" class="form-label">Data Final</label>
-                        <input type="date" class="form-control" id="dataFinal" name="dataFinal">
-                    </div>
-                    <div class="col-md-4">
-                        <label for="anoBase" class="form-label">Ano Base</label>
-                        <input type="number" class="form-control" id="anoBase" name="anoBase" min="2000" max="2100">
+                <!-- férias -->
+                <div id="campoFerias" style="display: none; border: 1px solid #ccc; padding: 10px; margin-top: 20px;">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="dataInicial" class="form-label">Data Inicial</label>
+                            <input type="date" class="form-control" id="dataInicial" name="dataInicial">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="dataFinal" class="form-label">Data Final</label>
+                            <input type="date" class="form-control" id="dataFinal" name="dataFinal">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="anoBase" class="form-label">Ano Base</label>
+                            <input type="number" class="form-control" id="anoBase" name="anoBase" min="2000" max="2100">
+                        </div>
                     </div>
                 </div>
+
             </div>
+            <div class="row mb-3">
+                <div class="col-md-12 d-flex justify-content-end">
+                    <button type="button" class="btn btn-primary" id="btnAdicionarPM" style="margin-right: 15px;">Adicionar PM</button>
+                    <button type="reset" class="btn btn-secondary">Cancelar</button>
+                </div>
+            </div>
+        </fieldset>
 
-    </div>
-    <div class="row mb-3">
-        <div class="col-md-12 d-flex justify-content-end">
-            <button type="button" class="btn btn-primary" id="btnAdicionarPM" style="margin-right: 15px;">Adicionar PM</button>
-            <button type="reset" class="btn btn-secondary">Cancelar</button>
-        </div>
-    </div>
-    </fieldset>
-
-    <fieldset>
-        <legend>Lista de Matérias de Pessoas</legend>
-        <table class="table table-bordered" id="tabelaPessoas">
-            <thead>
-                <tr>
-                    <th>Ações</th>
-                    <th>Nome</th>
-                    <th>Posto/Graduação Atual</th>
-                    <th>Unidade</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td colspan="4" class="text-center">Nenhum registro encontrado.</td>
-                </tr>
-            </tbody>
-        </table>
-    </fieldset>
+        <fieldset>
+            <legend>Lista de Matérias de Pessoas</legend>
+            <table class="table table-bordered" id="tabelaPessoas">
+                <thead>
+                    <tr>
+                        <th>Ações</th>
+                        <th>Nome</th>
+                        <th>Posto/Graduação Atual</th>
+                        <th>Unidade</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <!-- <td colspan="4" class="text-center">Nenhum registro encontrado.</td> -->
+                    </tr>
+                </tbody>
+            </table>
+        </fieldset>
     </div>

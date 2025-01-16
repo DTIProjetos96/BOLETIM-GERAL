@@ -1,4 +1,3 @@
-
 <?php
 // No arquivo user_functions.php
 
@@ -55,42 +54,68 @@ function buscarDadosPolicial($pdo, $matricula) {
 }
 
 
-// Verifique se a requisição é um POST
+// //DETALHES DE POLICIAL
+// if (isset($_POST['action']) && $_POST['action'] === 'buscar_detalhes_policial') {
+//     $matricula = $_POST['matricula'] ?? '';
+
+//     if (!empty($matricula)) {
+//         try {
+//             $query = "
+//                 SELECT matricula, nome, pg_descricao, unidade
+//                 FROM vw_policiais_militares
+//                 WHERE matricula = :matricula
+//                 LIMIT 1
+//             ";
+//             $stmt = $pdo->prepare($query);
+//             $stmt->execute(['matricula' => $matricula]);
+//             $dados = $stmt->fetch(PDO::FETCH_ASSOC);
+
+//             if ($dados) {
+//                 echo json_encode(['success' => true, 'dados' => $dados]);
+//             } else {
+//                 echo json_encode(['success' => false, 'message' => 'Policial não encontrado.']);
+//             }
+//         } catch (PDOException $e) {
+//             echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+//         }
+//     } else {
+//         echo json_encode(['success' => false, 'message' => 'Matrícula não informada.']);
+//     }
+//     exit;
+// }
+
+
+
+
 // Verifica se a ação passada é válida
-if (isset($_POST['action']) && $_POST['action'] === 'buscar_policial_militar') {
-    $term = $_POST['term'] ?? '';
 
-    // Verifica se o termo não está vazio
-    if (!empty($term)) {
-        try {
-            $query = "SELECT matricula, nome FROM vw_pessoa_materia WHERE nome ILIKE :term LIMIT 10";
-            $stmt = $pdo->prepare($query);
-            $stmt->bindValue(':term', '%' . $term . '%', PDO::PARAM_STR);
-            $stmt->execute();
+if ($_POST['action'] === 'buscar_policial_militar') {
+    $term = isset($_POST['term']) ? $_POST['term'] : '';
 
-            $resultados = [];
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                $resultados[] = [
-                    'label' => $row['nome'],  // Nome do policial
-                    'value' => $row['matricula'],  // Matrícula do policial
-                ];
-            }
+    try {
+        $query = "SELECT matricula AS value, nome AS label, pg_descricao, unidade
+                  FROM vw_policiais_militares
+                  WHERE nome ILIKE :term OR CAST(matricula AS TEXT) LIKE :term
+                  LIMIT 10";
 
-            // Define o cabeçalho e retorna os dados JSON
-            header('Content-Type: application/json');
-            echo json_encode($resultados);
-        } catch (PDOException $e) {
-            // Retorna erro em formato JSON
-            header('Content-Type: application/json');
-            echo json_encode(['error' => 'Erro ao buscar policiais: ' . $e->getMessage()]);
+        $stmt = $pdo->prepare($query);
+        $stmt->bindValue(':term', '%' . $term . '%', PDO::PARAM_STR);
+        $stmt->execute();
+
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Adiciona os campos necessários ao autocomplete
+        foreach ($results as &$result) {
+            $result['pg_descricao'] = $result['pg_descricao'] ?? 'Não especificado';
+            $result['unidade'] = $result['unidade'] ?? 'Não especificado';
         }
-    } else {
-        // Retorna erro se o termo estiver vazio
-        header('Content-Type: application/json');
-        echo json_encode(['error' => 'Termo de busca vazio.']);
+
+        echo json_encode($results);
+    } catch (Exception $e) {
+        echo json_encode(['error' => $e->getMessage()]);
     }
-    exit; // Encerra o script
 }
+
 
 // Recupera as opções para o campo Posto/Graduação
 function buscarPostosGraduacoes($pdo) {
@@ -114,4 +139,4 @@ function buscarUnidades($pdo) {
     }
 }
 
-?>
+?> 
