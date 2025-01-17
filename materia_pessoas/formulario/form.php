@@ -19,6 +19,10 @@ $tipos_documento = getTiposDocumento($pdo);
 // Chama a função para buscar os dados do policial
 $dadosPolicialResponse = buscarDadosPolicial($pdo, $matricula);
 
+// Chama a função para buscar o tipo de documento
+$tipos_documento = getTiposDocumento($pdo);
+
+
 ?>
 
 <head>

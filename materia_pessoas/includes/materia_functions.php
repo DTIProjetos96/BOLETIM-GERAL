@@ -228,5 +228,7 @@ function buscarAssuntoGeralPorEspecifico($pdo, $assu_espe_cod) {
         return ['success' => false, 'error' => $e->getMessage()];
     }
 }
+
+
 ?>
 
