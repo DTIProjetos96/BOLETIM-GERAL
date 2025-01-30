@@ -1,56 +1,58 @@
 document.addEventListener('DOMContentLoaded', function () {
     const assuntoEspecificoSelect = document.getElementById('fk_assu_espe_cod');
     const assuntoGeralSelect = document.getElementById('fk_assu_gera_cod');
-    const textoMateriaTextarea = document.getElementById('mate_bole_texto');
     const campoFerias = document.getElementById('campoFerias');
 
-    // Função para verificar o valor do Assunto Geral
     function verificarAssuntoGeral() {
         const assuntoGeralCod = assuntoGeralSelect.value;
         console.log("Assunto Geral Selecionado:", assuntoGeralCod);
 
-        // Se o Assunto Geral for 12 (Férias), mostrar os campos de férias
-        if (assuntoGeralCod == '12') {
-            campoFerias.style.display = 'block'; // Exibe os campos de férias
+        if (assuntoGeralCod === '12') {
+            campoFerias.style.display = 'block';
+            sessionStorage.setItem('assuntoGeral', '12'); // Salva no sessionStorage
         } else {
-            campoFerias.style.display = 'none'; // Esconde os campos de férias
+            campoFerias.style.display = 'none';
+            sessionStorage.removeItem('assuntoGeral'); // Remove caso não seja "Férias"
         }
     }
 
-    // Adicionando um evento de mudança no Assunto Específico
-    assuntoEspecificoSelect.addEventListener('change', function () {
-        const assuEspeCod = this.value;
+    // Função para carregar o Assunto Geral ao abrir a tela de edição
+    function carregarAssuntoGeral() {
+        const assuEspeCod = assuntoEspecificoSelect.value;
 
-        // Verificar se o Assunto Específico foi selecionado
         if (assuEspeCod) {
             fetch(`?action=fetch_assunto_texto&assu_espe_cod=${assuEspeCod}`, {
                 method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
             .then(response => response.json())
             .then(data => {
-                console.log("Resposta do servidor:", data); // Verifique a resposta do servidor
+                console.log("Resposta do servidor:", data);
 
                 if (data.success) {
-                    textoMateriaTextarea.value = data.assu_espe_texto || ''; // Atualiza o campo de texto
+                    document.getElementById('mate_bole_texto').value = data.assu_espe_texto || '';
 
-                    // Limpar todas as opções do Assunto Geral
+                    // Limpa o select antes de adicionar a opção correta
                     assuntoGeralSelect.innerHTML = '';
 
-                    // Adiciona a nova opção para Assunto Geral
                     if (data.assu_gera_cod && data.assu_gera_descricao) {
                         const option = document.createElement('option');
                         option.value = data.assu_gera_cod;
                         option.textContent = data.assu_gera_descricao;
-                        option.selected = true; // Marcar como selecionado
+                        option.selected = true;
                         assuntoGeralSelect.appendChild(option);
 
-                        // Após a mudança, verifica o Assunto Geral
-                        verificarAssuntoGeral();
+                        // **Força o valor correto antes de acionar o evento `change`**
+                        assuntoGeralSelect.value = data.assu_gera_cod;
+                        sessionStorage.setItem('assuntoGeral', data.assu_gera_cod); // Salva o valor
+
+                        // Aguarda a atualização do DOM antes de verificar
+                        setTimeout(() => {
+                            verificarAssuntoGeral();
+                            assuntoGeralSelect.dispatchEvent(new Event('change')); // Força atualização
+                        }, 100);
                     } else {
-                        // Adiciona uma opção padrão caso não haja dados
+                        sessionStorage.removeItem('assuntoGeral');
                         const defaultOption = document.createElement('option');
                         defaultOption.value = '';
                         defaultOption.textContent = 'Selecione o Assunto Geral';
@@ -62,8 +64,14 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(error => console.error('Erro na requisição:', error));
         }
-    });
+    }
 
-    // Inicializa a visibilidade dos campos de férias com base no valor atual do Assunto Geral
-    verificarAssuntoGeral(); // Chama a função para verificar se o Assunto Geral é Férias ao carregar a página
+    // Verifica se já há um Assunto Geral salvo na edição
+    if (assuntoEspecificoSelect.value) {
+        setTimeout(carregarAssuntoGeral, 500); // Aguarda carregamento do DOM
+    }
+
+    // Adiciona eventos para alteração
+    assuntoGeralSelect.addEventListener('change', verificarAssuntoGeral);
+    assuntoEspecificoSelect.addEventListener('change', carregarAssuntoGeral);
 });

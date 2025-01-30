@@ -7,8 +7,7 @@ include_once 'includes/user_functions.php';
 //login do usuário manualmente para fins de teste
 $user_login = '452912';
 
-$matricula = isset($_GET['matricula']) ? $_GET['matricula'] : ''; // Exemplo de matrícul
-
+$matricula = isset($_GET['matricula']) ? $_GET['matricula'] : ''; // Exemplo de matrícula
 
 // Chame a função para buscar os assuntos específicos
 $assuntosEspecificos = buscarAssuntosEspecificos($pdo);
@@ -22,12 +21,73 @@ $dadosPolicialResponse = buscarDadosPolicial($pdo, $matricula);
 // Chama a função para buscar o tipo de documento
 $tipos_documento = getTiposDocumento($pdo);
 
+// Se a sessão não estiver setada, redirecione ou trate de outra forma
+if (!isset($_SESSION['matricula'])) {
+    die('Você precisa estar logado para acessar este formulário.');
+}
 
+// Agora pega a matrícula do usuário logado
+$user_login = $_SESSION['matricula'];
+
+$subunidades = getSubunidadesUsuario($pdo, $_SESSION['matricula']);
+
+// Verifica se é edição
+$mate_bole_cod = isset($_GET['mate_bole_cod']) ? (int)$_GET['mate_bole_cod'] : 0;
+
+// Inicializa o array da matéria
+$materia = [];
+
+// Se for edição, carrega os dados da matéria
+// Verifica se é edição
+$mate_bole_cod = isset($_GET['mate_bole_cod']) ? (int)$_GET['mate_bole_cod'] : 0;
+
+// Inicializa o array da matéria
+$materia = [];
+
+// Se for edição, carrega os dados da matéria
+if ($mate_bole_cod > 0) {
+    $materia = buscarMateriaEdicao($pdo, $mate_bole_cod);
+    if (!$materia) {
+        echo "<div class='alert alert-danger'>Matéria não encontrada!</div>";
+        $mate_bole_cod = 0; // Impede edição de algo inexistente
+    } else {
+        // ✅ Busca o Assunto Geral relacionado ao Assunto Específico
+        if (!empty($materia['fk_assu_espe_cod'])) {
+            $assuntoGeral = buscarAssuntoGeralPorEspecifico($pdo, $materia['fk_assu_espe_cod']);
+            if ($assuntoGeral['success']) {
+                $materia['fk_assu_gera_cod'] = $assuntoGeral['assu_gera_cod'];
+                $materia['assu_gera_descricao'] = $assuntoGeral['assu_gera_descricao'];
+            }
+        }
+    }
+}
+
+
+// Atualizar os dados da matéria com a resposta do servidor, se existir
+if (isset($response['success']) && $response['success']) {
+    $materia['fk_assu_gera_cod'] = $response['assu_gera_cod'];
+    $materia['assu_gera_descricao'] = $response['assu_gera_descricao'];
+    $materia['mate_bole_texto'] = $response['assu_espe_texto'];
+}
+
+
+// Formata a data do documento no formato yyyy-MM-dd
+$date_doc = null;
+if (!empty($materia['mate_bole_data_doc'])) {
+    try {
+        $date = new DateTime($materia['mate_bole_data_doc']);
+        $date_doc = $date->format('Y-m-d'); // Formata para o formato aceito pelo input
+    } catch (Exception $e) {
+        $date_doc = ''; // Valor padrão se a data for inválida
+    }
+}
 ?>
 
 <head>
     <script src="js/assunto_geral_especifico.js"></script>
     <script src="js/autocomplete.js"></script>
+    <!-- <script src="js/adicionar_pm.js"></script> -->
+
 </head>
 
 <form method="POST" action="cad.php" enctype="multipart/form-data">
@@ -49,20 +109,24 @@ $tipos_documento = getTiposDocumento($pdo);
                     </option>
                 <?php endforeach; ?>
             </select>
+
         </div>
+
+
         <!-- ASSUNTO GERAL -->
         <div class="col-md-6">
             <label for="fk_assu_gera_cod" class="form-label">Assunto Geral</label>
-            <select class="form-select" id="fk_assu_gera_cod" name="fk_assu_gera_cod" required>
-                <?php if (!empty($materia['fk_assu_gera_cod'])): ?>
+            <select class="form-select" id="fk_assu_gera_cod" name="fk_assu_gera_cod">
+                <option value="">Selecione o Assunto Geral</option>
+                <?php if (!empty($materia['fk_assu_gera_cod']) && !empty($materia['assu_gera_descricao'])): ?>
                     <option value="<?= htmlspecialchars($materia['fk_assu_gera_cod']) ?>" selected>
-                        <?= htmlspecialchars($materia['fk_assu_gera_descricao']) ?>
+                        <?= htmlspecialchars($materia['assu_gera_descricao']) ?>
                     </option>
-                <?php else: ?>
-                    <option value="">Selecione o Assunto Geral</option>
                 <?php endif; ?>
             </select>
         </div>
+
+
     </div>
 
     <!-- NOME DA UNIDADE -->
@@ -73,27 +137,22 @@ $tipos_documento = getTiposDocumento($pdo);
                 <option value="">Selecione</option>
                 <?php foreach ($subunidades as $subunidade): ?>
                     <option value="<?= htmlspecialchars($subunidade['subu_cod']) ?>"
-                        <?php
-                        if ($mate_bole_cod > 0 && isset($materia['fk_subu_cod']) && $materia['fk_subu_cod'] == $subunidade['subu_cod']) {
-                            echo 'selected';
-                        }
-                        if ($unidade && $unidade === $subunidade['descricao']) {
-                            echo 'selected'; // Se a unidade do policial corresponder, marque como selecionada
-                        }
-                        ?>>
+                        <?= ($materia['fk_subu_cod'] == $subunidade['subu_cod']) ? 'selected' : ''; ?>>
                         <?= htmlspecialchars($subunidade['descricao']) ?>
                     </option>
                 <?php endforeach; ?>
             </select>
+
+
+
         </div>
 
         <!-- DATA DA MATÉRIA -->
         <div class="col-md-6">
             <label for="mate_bole_data" class="form-label">Data da Matéria</label>
             <input type="date" class="form-control" id="mate_bole_data" name="mate_bole_data"
-                value="<?php
-                        echo $mate_bole_cod > 0 ? htmlspecialchars($materia['mate_bole_data']) : (isset($_POST['mate_bole_data']) ? htmlspecialchars($_POST['mate_bole_data']) : '');
-                        ?>" required>
+                value="<?= htmlspecialchars($materia['mate_bole_data'] ?? '') ?>" required>
+
         </div>
     </div>
 
@@ -105,24 +164,20 @@ $tipos_documento = getTiposDocumento($pdo);
                 <option value="">Selecione</option>
                 <?php foreach ($tipos_documento as $tipo): ?>
                     <option value="<?= htmlspecialchars($tipo['tipo_docu_cod']) ?>"
-                        <?php
-                        if ($mate_bole_cod > 0 && isset($materia['fk_tipo_docu_cod']) && $materia['fk_tipo_docu_cod'] == $tipo['tipo_docu_cod']) {
-                            echo 'selected';
-                        }
-                        ?>>
+                        <?= ($materia['fk_tipo_docu_cod'] == $tipo['tipo_docu_cod']) ? 'selected' : ''; ?>>
                         <?= htmlspecialchars($tipo['tipo_docu_descricao']) ?>
                     </option>
                 <?php endforeach; ?>
             </select>
+
         </div>
 
         <!-- NÚMERO DO DOCUMENTO -->
         <div class="col-md-6">
             <label for="mate_bole_nr_doc" class="form-label">Número do Documento</label>
             <input type="text" class="form-control" id="mate_bole_nr_doc" name="mate_bole_nr_doc"
-                value="<?php
-                        echo $mate_bole_cod > 0 ? htmlspecialchars($materia['mate_bole_nr_doc']) : (isset($_POST['mate_bole_nr_doc']) ? htmlspecialchars($_POST['mate_bole_nr_doc']) : '');
-                        ?>">
+                value="<?= htmlspecialchars($materia['mate_bole_nr_doc'] ?? '') ?>">
+
         </div>
     </div>
 
@@ -131,9 +186,11 @@ $tipos_documento = getTiposDocumento($pdo);
         <div class="col-md-6">
             <label for="mate_bole_data_doc" class="form-label">Data do Documento</label>
             <input type="date" class="form-control" id="mate_bole_data_doc" name="mate_bole_data_doc"
-                value="<?php
-                        echo $mate_bole_cod > 0 ? htmlspecialchars($materia['mate_bole_data_doc']) : (isset($_POST['mate_bole_data_doc']) ? htmlspecialchars($_POST['mate_bole_data_doc']) : '');
-                        ?>">
+                value="<?= htmlspecialchars($materia['mate_bole_data_doc'] ?? '') ?>">
+
+
+
+
         </div>
     </div>
 
@@ -141,13 +198,15 @@ $tipos_documento = getTiposDocumento($pdo);
     <div class="row">
         <div class="col-md-12">
             <label for="mate_bole_texto" class="form-label">Texto da Matéria</label>
-            <textarea class="form-control" id="mate_bole_texto" name="mate_bole_texto" rows="5" required><?= htmlspecialchars($materia['mate_bole_texto']) ?></textarea>
+            <textarea class="form-control" id="mate_bole_texto" name="mate_bole_texto" rows="5" required><?= htmlspecialchars($materia['mate_bole_texto'] ?? '') ?></textarea>
+
         </div>
     </div>
 
     <!-- Botões Salvar e Cancelar -->
     <div class="button-group mt-4 mb-4"> <!-- Adicionei a classe mb-4 para adicionar o espaçamento entre os botões e a próxima seção -->
         <?php if ($mate_bole_cod > 0): ?>
+
             <button type="submit" class="btn btn-primary" id="btnSalvar">Atualizar</button>
         <?php else: ?>
             <!-- Botão Salvar -->
@@ -160,8 +219,11 @@ $tipos_documento = getTiposDocumento($pdo);
     </div>
 
     <!-- Seção para Associar Pessoas à Matéria -->
-    <div class="associar-pessoa-container">
+    <div class="associar-pessoa-container"
+        style="<?= $mate_bole_cod == 0 ? 'pointer-events: none; opacity: 0.5;' : '' ?>">
+
         <h3>Associar Pessoas à Matéria</h3>
+
         <fieldset>
             <legend>Cadastro de Matéria de Pessoas</legend>
             <!-- Campo para buscar o Policial Militar -->
@@ -179,6 +241,7 @@ $tipos_documento = getTiposDocumento($pdo);
                         <option value="">Selecione</option>
                     </select>
                 </div>
+
 
                 <div class="col-md-4">
                     <label for="unidade" class="form-label">Unidade</label>
@@ -220,10 +283,11 @@ $tipos_documento = getTiposDocumento($pdo);
             <table class="table table-bordered" id="tabelaPessoas">
                 <thead>
                     <tr>
-                        <th>Ações</th>
+
                         <th>Nome</th>
                         <th>Posto/Graduação Atual</th>
                         <th>Unidade</th>
+                        <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody>

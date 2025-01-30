@@ -24,6 +24,22 @@ if (!isset($pdo)) {
 }
 
 
+function getSubunidadesUsuario($pdo, $login) {
+    // Buscar subunidades para as quais o usuário tem permissão, etc.
+    $stmt = $pdo->prepare("
+        SELECT subu_cod, concat(subu_descricao, ' - ', unid_descricao, ' - ', coma_descricao) as descricao
+        FROM public.vw_comando_unidade_subunidade
+        WHERE subu_cod IN (
+            SELECT fk_subunidade
+            FROM bg.vw_permissao
+            WHERE fk_login = :login AND perm_ativo = 1
+        )
+        ORDER BY subu_descricao, unid_descricao, coma_descricao
+    ");
+    $stmt->execute(['login' => $login]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 
 
 // Função para buscar os dados do policial com base na matrícula
@@ -53,42 +69,7 @@ function buscarDadosPolicial($pdo, $matricula) {
     }
 }
 
-
-// //DETALHES DE POLICIAL
-// if (isset($_POST['action']) && $_POST['action'] === 'buscar_detalhes_policial') {
-//     $matricula = $_POST['matricula'] ?? '';
-
-//     if (!empty($matricula)) {
-//         try {
-//             $query = "
-//                 SELECT matricula, nome, pg_descricao, unidade
-//                 FROM vw_policiais_militares
-//                 WHERE matricula = :matricula
-//                 LIMIT 1
-//             ";
-//             $stmt = $pdo->prepare($query);
-//             $stmt->execute(['matricula' => $matricula]);
-//             $dados = $stmt->fetch(PDO::FETCH_ASSOC);
-
-//             if ($dados) {
-//                 echo json_encode(['success' => true, 'dados' => $dados]);
-//             } else {
-//                 echo json_encode(['success' => false, 'message' => 'Policial não encontrado.']);
-//             }
-//         } catch (PDOException $e) {
-//             echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-//         }
-//     } else {
-//         echo json_encode(['success' => false, 'message' => 'Matrícula não informada.']);
-//     }
-//     exit;
-// }
-
-
-
-
 // Verifica se a ação passada é válida
-
 if ($_POST['action'] === 'buscar_policial_militar') {
     $term = isset($_POST['term']) ? $_POST['term'] : '';
 
@@ -136,6 +117,42 @@ function buscarUnidades($pdo) {
     } catch (PDOException $e) {
         error_log("Erro ao buscar unidades: " . $e->getMessage());
         return [];
+    }
+}
+
+
+// Função para inserir um Policial Militar na tabela pessoa_materia
+function adicionarPolicialMateria($pdo, $dados) {
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO bg.pessoa_materia (
+                fk_poli_lota_cod, 
+                fk_mate_bole_cod, 
+                pess_mate_data_inicio, 
+                pess_mate_data_fim, 
+                fk_index_post_grad_cod, 
+                pess_mate_anobase, 
+                fk_poli_mili_matricula, 
+                fk_tiat_cod, 
+                fk_posto_grad_atual
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+
+        $stmt->execute([
+            $dados['unidade'],            // fk_poli_lota_cod
+            $dados['mate_bole_cod'],      // fk_mate_bole_cod
+            $dados['data_inicio'],        // pess_mate_data_inicio
+            $dados['data_fim'],           // pess_mate_data_fim
+            $dados['posto_graduacao'],    // fk_index_post_grad_cod
+            $dados['ano_base'],           // pess_mate_anobase
+            $dados['matricula'],          // fk_poli_mili_matricula
+            1,                            // fk_tiat_cod (padrão para 1)
+            $dados['posto_grad_atual']    // fk_posto_grad_atual
+        ]);
+
+        return ['success' => true, 'message' => 'Policial adicionado com sucesso!'];
+    } catch (PDOException $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
     }
 }
 

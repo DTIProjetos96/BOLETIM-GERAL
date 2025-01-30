@@ -62,6 +62,41 @@ if (isAjaxRequest() && isset($_GET['action']) && $_GET['action'] === 'fetch_assu
     exit;
 }
 
+function adicionarMateria($pdo, $data) {
+    try {
+        $stmt = $pdo->prepare('
+            INSERT INTO bg.materia_boletim (
+                mate_bole_texto, 
+                mate_bole_data, 
+                fk_tipo_docu_cod, 
+                fk_assu_espe_cod, 
+                fk_assu_gera_cod,  
+                mate_bole_nr_doc, 
+                mate_bole_data_doc, 
+                fk_subu_cod
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            RETURNING mate_bole_cod
+        ');
+
+        $stmt->execute([
+            $data['mate_bole_texto'], 
+            $data['mate_bole_data'], 
+            $data['fk_tipo_docu_cod'],
+            $data['fk_assu_espe_cod'], 
+            $data['fk_assu_gera_cod'], 
+            $data['mate_bole_nr_doc'], 
+            $data['mate_bole_data_doc'], 
+            $data['fk_subu_cod']
+        ]);
+
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['mate_bole_cod'] ?? null;
+
+    } catch (PDOException $e) {
+        error_log("Erro ao adicionar matéria: " . $e->getMessage());
+        return null;
+    }
+}
 
 
 // Função para salvar uma nova matéria
@@ -75,19 +110,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     mate_bole_data, 
                     fk_tipo_docu_cod, 
                     fk_assu_espe_cod, 
+                    fk_assu_gera_cod,  
                     mate_bole_nr_doc, 
                     mate_bole_data_doc, 
                     fk_subu_cod
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 RETURNING mate_bole_cod
             ');
             $stmt->execute([
-                $_POST['mate_bole_texto'],
-                $_POST['mate_bole_data'],
+                $_POST['mate_bole_texto'], 
+                $_POST['mate_bole_data'], 
                 $_POST['fk_tipo_docu_cod'],
-                $_POST['fk_assu_espe_cod'],
-                $_POST['mate_bole_nr_doc'],
-                $_POST['mate_bole_data_doc'],
+                $_POST['fk_assu_espe_cod'], 
+                $_POST['fk_assu_gera_cod'], // ADICIONADO AQUI! 
+                $_POST['mate_bole_nr_doc'], 
+                $_POST['mate_bole_data_doc'], 
                 $_POST['fk_subu_cod']
             ]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -99,14 +136,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $mensagem_sucesso = 'Matéria cadastrada com sucesso!';
         } catch (PDOException $e) {
-            $mensagem_sucesso = ''; // Certifique-se de que não haja mensagem de sucesso em caso de erro
+            $mensagem_sucesso = ''; 
             echo '<div class="alert alert-danger">Erro ao cadastrar a Matéria: ' . htmlspecialchars($e->getMessage()) . '</div>';
         } catch (Exception $e) {
-            $mensagem_sucesso = ''; // Certifique-se de que não haja mensagem de sucesso em caso de erro
+            $mensagem_sucesso = ''; 
             echo '<div class="alert alert-danger">Erro: ' . htmlspecialchars($e->getMessage()) . '</div>';
         }
     }
 }
+
 
 // Função para editar uma matéria
 function editarMateria($pdo, $mate_bole_cod, $data) {
@@ -140,16 +178,47 @@ function editarMateria($pdo, $mate_bole_cod, $data) {
 
 // Função para buscar os dados de uma matéria para edição
 function buscarMateriaEdicao($pdo, $mate_bole_cod) {
-    $sql = "SELECT * FROM bg.materia_boletim WHERE mate_bole_cod = :mate_bole_cod";
+    $sql = "
+        SELECT 
+            mb.*, 
+            ag.assu_gera_descricao AS assunto_geral_descricao, 
+            ag.assu_gera_cod AS assunto_geral_cod, 
+            CONCAT(su.subu_descricao, ' - ', su.unid_descricao, ' - ', su.coma_descricao) AS unidade_descricao
+        FROM bg.materia_boletim mb
+        LEFT JOIN bg.assunto_geral ag ON mb.fk_assu_gera_cod = ag.assu_gera_cod
+        LEFT JOIN public.vw_comando_unidade_subunidade su ON mb.fk_subu_cod = su.subu_cod
+        WHERE mb.mate_bole_cod = :mate_bole_cod
+    ";
     $stmt = $pdo->prepare($sql);
     $stmt->bindParam(':mate_bole_cod', $mate_bole_cod, PDO::PARAM_INT);
     $stmt->execute();
+
     if ($stmt->rowCount() > 0) {
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        $materia = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // **Caso não tenha Assunto Geral, busque pelo Assunto Específico**
+        if (empty($materia['assunto_geral_cod']) && !empty($materia['fk_assu_espe_cod'])) {
+            $stmt_geral = $pdo->prepare("
+                SELECT assu_gera_cod, assu_gera_descricao 
+                FROM bg.vw_assunto_concatenado 
+                WHERE assu_espe_cod = :assu_espe_cod
+                LIMIT 1
+            ");
+            $stmt_geral->execute(['assu_espe_cod' => $materia['fk_assu_espe_cod']]);
+            $assunto_geral = $stmt_geral->fetch(PDO::FETCH_ASSOC);
+            $materia['fk_assu_gera_cod'] = $assunto_geral['assu_gera_cod'] ?? '';
+            $materia['assu_gera_descricao'] = $assunto_geral['assu_gera_descricao'] ?? '';
+        }
+
+        return $materia;
     } else {
         return null;
     }
 }
+
+
+
+
 
 // Recupera as opções para o campo Tipo de Documento da matéria
 function getTiposDocumento($pdo) {
