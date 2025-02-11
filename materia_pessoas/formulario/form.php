@@ -85,14 +85,16 @@ if (!empty($materia['mate_bole_data_doc'])) {
 
 <head>
     <script src="js/assunto_geral_especifico.js"></script>
-    <script src="js/autocomplete.js"></script>
-    <!-- <script src="js/adicionar_pm.js"></script> -->
+    <!-- <script src="js/autocomplete.js"></script> -->
+    <!-- <script src="js/associar_pessoa_materia.js"></script> -->
+    
+    
 
 </head>
 
 <form method="POST" action="cad.php" enctype="multipart/form-data">
     <?php if ($mate_bole_cod > 0): ?>
-        <input type="hidden" name="mate_bole_cod" value="<?php echo htmlspecialchars($mate_bole_cod); ?>">
+        <input type="hidden" id ="mate_bole_cod" name="mate_bole_cod" value="<?php echo htmlspecialchars($mate_bole_cod); ?>">
     <?php endif; ?>
 
 
@@ -298,3 +300,6 @@ if (!empty($materia['mate_bole_data_doc'])) {
             </table>
         </fieldset>
     </div>
+    <!-- <script src="js/associar_pessoa_materia.js"></script> -->
+
+</form> <!-- Mantém a estrutura do form corretamente -->

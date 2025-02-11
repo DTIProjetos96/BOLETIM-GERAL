@@ -1,9 +1,11 @@
 <?php
 // No arquivo user_functions.php
 
-// ini_set('display_errors', 1);
-// ini_set('display_startup_errors', 1);
-// error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+
 
 // Inclua o arquivo de conexão
 $root = $_SERVER['DOCUMENT_ROOT'] . '/Boletim/db.php';
@@ -42,6 +44,7 @@ function getSubunidadesUsuario($pdo, $login) {
 
 
 
+
 // Função para buscar os dados do policial com base na matrícula
 function buscarDadosPolicial($pdo, $matricula) {
     if ($matricula) {
@@ -74,7 +77,7 @@ if ($_POST['action'] === 'buscar_policial_militar') {
     $term = isset($_POST['term']) ? $_POST['term'] : '';
 
     try {
-        $query = "SELECT matricula AS value, nome AS label, pg_descricao, unidade
+        $query = "SELECT matricula AS value, nome AS label, id_pg AS postoGradCod, pg_descricao, unidade
                   FROM vw_policiais_militares
                   WHERE nome ILIKE :term OR CAST(matricula AS TEXT) LIKE :term
                   LIMIT 10";
@@ -87,6 +90,7 @@ if ($_POST['action'] === 'buscar_policial_militar') {
 
         // Adiciona os campos necessários ao autocomplete
         foreach ($results as &$result) {
+            $result['postoGradCod'] = isset($result['postoGradCod']) ? (int)$result['postoGradCod'] : 0;
             $result['pg_descricao'] = $result['pg_descricao'] ?? 'Não especificado';
             $result['unidade'] = $result['unidade'] ?? 'Não especificado';
         }
@@ -121,39 +125,56 @@ function buscarUnidades($pdo) {
 }
 
 
-// Função para inserir um Policial Militar na tabela pessoa_materia
-function adicionarPolicialMateria($pdo, $dados) {
-    try {
-        $stmt = $pdo->prepare("
-            INSERT INTO bg.pessoa_materia (
-                fk_poli_lota_cod, 
-                fk_mate_bole_cod, 
-                pess_mate_data_inicio, 
-                pess_mate_data_fim, 
-                fk_index_post_grad_cod, 
-                pess_mate_anobase, 
-                fk_poli_mili_matricula, 
-                fk_tiat_cod, 
-                fk_posto_grad_atual
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
+// if ($_POST['action'] === 'salvar_pessoa_materia') {
+//     $dados = [
+//         'buscaPolicial' => $_POST["buscaPolicial"],
+//         'postoGraduacao' => $_POST["postoGraduacao"],
+//         'unidade' => $_POST["unidade"],
+//         'mate_bole_cod' => $_POST["mate_bole_cod"],
+//         'dataInicial' => $_POST["dataInicial"] ?: '2000-01-01',
+//         'dataFinal' => $_POST["dataFinal"] ?: '2000-01-01',
+//         'anoBase' => $_POST["anoBase"] ?: 0
+//     ];
 
-        $stmt->execute([
-            $dados['unidade'],            // fk_poli_lota_cod
-            $dados['mate_bole_cod'],      // fk_mate_bole_cod
-            $dados['data_inicio'],        // pess_mate_data_inicio
-            $dados['data_fim'],           // pess_mate_data_fim
-            $dados['posto_graduacao'],    // fk_index_post_grad_cod
-            $dados['ano_base'],           // pess_mate_anobase
-            $dados['matricula'],          // fk_poli_mili_matricula
-            1,                            // fk_tiat_cod (padrão para 1)
-            $dados['posto_grad_atual']    // fk_posto_grad_atual
-        ]);
+//     $resultado = salvarPessoaMateria($pdo, $dados);
+//     echo json_encode($resultado);
+//     exit();
+// }
 
-        return ['success' => true, 'message' => 'Policial adicionado com sucesso!'];
-    } catch (PDOException $e) {
-        return ['success' => false, 'error' => $e->getMessage()];
-    }
-}
+
+// Função para salvar dados na tabela pessoa_materia
+// function salvarPessoaMateria($pdo, $dados) {
+//     try {
+//         $sql = "INSERT INTO bg.pessoa_materia (
+//             fk_poli_mili_matricula, 
+//             fk_index_post_grad_cod, 
+//             fk_posto_grad_atual, 
+//             fk_poli_lota_cod, 
+//             fk_mate_bole_cod, 
+//             pess_mate_data_inicio, 
+//             pess_mate_data_fim, 
+//             pess_mate_anobase, 
+//             fk_tiat_cod
+//         ) VALUES (:fk_poli_mili_matricula, :fk_index_post_grad_cod, :fk_posto_grad_atual, :fk_poli_lota_cod, :fk_mate_bole_cod, :pess_mate_data_inicio, :pess_mate_data_fim, :pess_mate_anobase, :fk_tiat_cod)";
+
+//         $stmt = $pdo->prepare($sql);
+//         $stmt->execute([
+//             ':fk_poli_mili_matricula' => $dados['buscaPolicial'],
+//             ':fk_index_post_grad_cod' => $dados['postoGraduacao'],
+//             ':fk_posto_grad_atual' => $dados['postoGraduacao'],
+//             ':fk_poli_lota_cod' => $dados['unidade'],
+//             ':fk_mate_bole_cod' => $dados['mate_bole_cod'],
+//             ':pess_mate_data_inicio' => $dados['dataInicial'] ?: '2000-01-01',
+//             ':pess_mate_data_fim' => $dados['dataFinal'] ?: '2000-01-01',
+//             ':pess_mate_anobase' => $dados['anoBase'] ?: 0,
+//             ':fk_tiat_cod' => 1 // Valor padrão
+//         ]);
+
+//         return ['success' => true, 'message' => 'Cadastro realizado com sucesso!'];
+//     } catch (PDOException $e) {
+//         return ['success' => false, 'error' => 'Erro ao inserir dados: ' . $e->getMessage()];
+//     }
+// }
+
 
 ?> 

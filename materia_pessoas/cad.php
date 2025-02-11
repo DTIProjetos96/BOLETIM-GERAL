@@ -69,7 +69,11 @@ $user_login = '452912';
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
-        
+
+    
+
+    <script src="/Boletim/materia_pessoas/js/associar_pessoa_materia.js"></script>
+
 </head>
 
 <body>
