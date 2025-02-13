@@ -53,36 +53,39 @@ $(document).ready(function () {
     /******************************************
      * Botão "Adicionar PM" - Envio via AJAX  *
      ******************************************/
-    $("#btnAdicionarPM").off("click").on("click", function () {
+    $("#btnAdicionarPM").click(function () {
         // Obtém o objeto selecionado no autocomplete
         const policial = $("#buscaPolicial").data("selected-policial");
         if (!policial) {
             alert("Selecione um policial no autocomplete.");
             return;
         }
-        // Extrai os dados necessários
         const matriculaPM = policial.value;
         const nomePM = policial.label;
-        // Para o select de posto/graduação, usamos o valor do option (que foi configurado com o ID numérico)
-        const postoGraduacao = $("#postoGraduacao option:selected").val();
+        
+        // Captura o valor numérico e o texto para o posto/graduação
+        const postoGraduacaoId = $("#postoGraduacao option:selected").val();
+        const postoGraduacaoTexto = $("#postoGraduacao option:selected").text();
+        
         const unidade = $("#unidade option:selected").val();
         const dataInicio = $("#dataInicial").val();
         const dataFim = $("#dataFinal").val();
         const anoBase = $("#anoBase").val();
         const mateBoleCod = $("#mate_bole_cod").val();
-
+    
         if (!mateBoleCod) {
             alert("É necessário ter uma matéria salva para associar pessoas.");
             return;
         }
-
+    
+        // Envio via AJAX usando o valor numérico para "postoGraduacao"
         $.ajax({
             url: "/Boletim/materia_pessoas/includes/salvar_pessoa_materia.php",
             method: "POST",
             data: {
                 mate_bole_cod: mateBoleCod,
                 matriculaPM: matriculaPM,
-                postoGraduacao: postoGraduacao,
+                postoGraduacao: postoGraduacaoId,  // Envia o ID para o banco
                 unidade: unidade,
                 dataInicio: dataInicio,
                 dataFim: dataFim,
@@ -92,7 +95,8 @@ $(document).ready(function () {
             success: function (resposta) {
                 if (resposta.success) {
                     alert(resposta.mensagem);
-                    inserirLinhaNaTabela(matriculaPM, nomePM, postoGraduacao, unidade);
+                    // Ao inserir na tabela, use o texto (descrição) para o posto/graduação
+                    inserirLinhaNaTabela(matriculaPM, nomePM, postoGraduacaoTexto, unidade);
                     // Limpa os campos após inserir
                     $("#buscaPolicial").val("").removeData("selected-policial");
                     $("#postoGraduacao").prop("disabled", true).html('<option value="">Selecione</option>');
@@ -110,7 +114,8 @@ $(document).ready(function () {
             }
         });
     });
-
+    
+    
     /******************************************
      * Função para Inserir Linha na Tabela   *
      ******************************************/
