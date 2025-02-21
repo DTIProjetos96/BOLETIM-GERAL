@@ -154,37 +154,94 @@ $(document).ready(function () {
 
     $("#tabelaPessoas").on("click", ".btnEditar", function () {
         const linha = $(this).closest("tr");
-        const postoAtual = linha.find("td:nth-child(2)").text();
-        const unidadeAtual = linha.find("td:nth-child(3)").text();
-        linha.find("td:nth-child(2)").html(`<input type="text" class="form-control" value="${postoAtual}" />`);
-        linha.find("td:nth-child(3)").html(`<input type="text" class="form-control" value="${unidadeAtual}" />`);
+        // Recupera o texto atual exibido (que será usado para selecionar a opção correta)
+        const postoAtual = linha.find("td:nth-child(2)").text().trim();
+        const unidadeAtual = linha.find("td:nth-child(3)").text().trim();
+    
+        // Cria os selects usando os blocos ocultos que você deve ter adicionado no HTML
+        const selectPosto = $('<select class="form-select"></select>').html($("#hiddenPostoOptions").html());
+        const selectUnidade = $('<select class="form-select"></select>').html($("#hiddenUnidadeOptions").html());
+    
+        // Seleciona a opção que corresponde ao valor atual
+        selectPosto.find("option").each(function () {
+            if ($(this).text().trim() === postoAtual) {
+                $(this).prop("selected", true);
+            }
+        });
+        selectUnidade.find("option").each(function () {
+            if ($(this).text().trim() === unidadeAtual) {
+                $(this).prop("selected", true);
+            }
+        });
+    
+        // Substitui o conteúdo das células pelos selects
+        linha.find("td:nth-child(2)").empty().append(selectPosto);
+        linha.find("td:nth-child(3)").empty().append(selectUnidade);
+    
+        // Altera a célula de ações para botões Salvar e Cancelar
         linha.find("td:nth-child(4)").html(`
             <button class="btn btn-success btn-sm btnSalvar">Salvar</button>
             <button class="btn btn-secondary btn-sm btnCancelar">Cancelar</button>
         `);
     });
-
+    
+    // Evento para salvar as alterações
     $("#tabelaPessoas").on("click", ".btnSalvar", function () {
         const linha = $(this).closest("tr");
-        const novoPosto = linha.find("td:nth-child(2) input").val();
-        const novaUnidade = linha.find("td:nth-child(3) input").val();
-        linha.find("td:nth-child(2)").text(novoPosto);
-        linha.find("td:nth-child(3)").text(novaUnidade);
+        const novoPostoId = linha.find("td:nth-child(2) select").val();
+        const novoPostoTexto = linha.find("td:nth-child(2) select option:selected").text();
+        const novaUnidadeId = linha.find("td:nth-child(3) select").val();
+        const novaUnidadeTexto = linha.find("td:nth-child(3) select option:selected").text();
+    
+        // Aqui você pode fazer uma chamada AJAX para salvar as alterações no banco.
+        // Exemplo:
+        /*
+        $.ajax({
+            url: 'atualizar_pessoa_materia.php',
+            method: 'POST',
+            data: {
+                pess_mate_cod: linha.data("pess-mate-cod"),
+                novo_id_pg: novoPostoId,
+                nova_unidade: novaUnidadeId
+            },
+            dataType: 'json',
+            success: function(resposta) {
+                if(resposta.success) {
+                    // Atualiza a exibição da linha
+                    linha.find("td:nth-child(2)").text(novoPostoTexto);
+                    linha.find("td:nth-child(3)").text(novaUnidadeTexto);
+                    linha.find("td:nth-child(4)").html(`
+                        <button class="btn btn-warning btn-sm btnEditar">Editar</button>
+                        <button class="btn btn-danger btn-sm" onclick="excluirRegistro('${linha.data("matricula")}')">Excluir</button>
+                    `);
+                } else {
+                    alert("Erro na atualização");
+                }
+            }
+        });
+        */
+        
+        // Para este exemplo, vamos apenas atualizar a exibição:
+        linha.find("td:nth-child(2)").text(novoPostoTexto);
+        linha.find("td:nth-child(3)").text(novaUnidadeTexto);
         linha.find("td:nth-child(4)").html(`
-            <button class="btn btn-danger btn-sm" onclick="excluirRegistro('${linha.data("matricula")}')">Excluir</button>
             <button class="btn btn-warning btn-sm btnEditar">Editar</button>
+            <button class="btn btn-danger btn-sm" onclick="excluirRegistro('${linha.data("matricula")}')">Excluir</button>
         `);
     });
-
+    
+    // Evento para cancelar a edição
     $("#tabelaPessoas").on("click", ".btnCancelar", function () {
         const linha = $(this).closest("tr");
-        const postoDigitado = linha.find("td:nth-child(2) input").val();
-        const unidadeDigitada = linha.find("td:nth-child(3) input").val();
-        linha.find("td:nth-child(2)").text(postoDigitado);
-        linha.find("td:nth-child(3)").text(unidadeDigitada);
+        // Restaura os valores originais da linha
+        const postoOriginal = linha.data("posto-original");
+        const unidadeOriginal = linha.data("unidade-original");
+        linha.find("td:nth-child(2)").text(postoOriginal);
+        linha.find("td:nth-child(3)").text(unidadeOriginal);
         linha.find("td:nth-child(4)").html(`
-            <button class="btn btn-danger btn-sm" onclick="excluirRegistro('${linha.data("matricula")}')">Excluir</button>
             <button class="btn btn-warning btn-sm btnEditar">Editar</button>
+            <button class="btn btn-danger btn-sm" onclick="excluirRegistro('${linha.data("matricula")}')">Excluir</button>
         `);
     });
+    
 });

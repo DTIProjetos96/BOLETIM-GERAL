@@ -571,17 +571,34 @@ $assuntosEspecificos = getAssuntosEspecificos($pdo);
             </tbody>
         </table>
         
-    <nav aria-label="Navegação de página">
+        <nav aria-label="Navegação de página">
     <ul class="pagination justify-content-center">
-        <?php for ($i = 1; $i <= $totalPaginas; $i++): ?>
-            <li class="page-item <?= ($i == $pagina) ? 'active' : '' ?>">
-                <a class="page-link" href="consulta_materia1.php?pagina=<?= $i ?>&status=<?= $status ?>">
-                    <?= $i ?>
-                </a>
-            </li>
-        <?php endfor; ?>
+        <?php
+        $limitePaginas = 5; // Número máximo de páginas visíveis antes/depois da atual
+        $inicio = max(1, $pagina - floor($limitePaginas / 2));
+        $fim = min($totalPaginas, $inicio + $limitePaginas - 1);
+
+        // Botão "Primeira"
+        if ($inicio > 1) {
+            echo '<li class="page-item"><a class="page-link" href="consulta_materia1.php?pagina=1&status='.$status.'">1</a></li>';
+            echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
+        }
+
+        // Loop para exibir as páginas próximas à atual
+        for ($i = $inicio; $i <= $fim; $i++) {
+            $activeClass = ($i == $pagina) ? 'active' : '';
+            echo '<li class="page-item '.$activeClass.'"><a class="page-link" href="consulta_materia1.php?pagina='.$i.'&status='.$status.'">'.$i.'</a></li>';
+        }
+
+        // Botão "Última"
+        if ($fim < $totalPaginas) {
+            echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
+            echo '<li class="page-item"><a class="page-link" href="consulta_materia1.php?pagina='.$totalPaginas.'&status='.$status.'">'.$totalPaginas.'</a></li>';
+        }
+        ?>
     </ul>
 </nav>
+
     
     </div>
 

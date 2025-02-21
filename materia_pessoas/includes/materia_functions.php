@@ -101,49 +101,52 @@ function adicionarMateria($pdo, $data) {
 
 // Função para salvar uma nova matéria
 // Verifique se o formulário foi enviado
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['action']) && $_POST['action'] === 'add_materia') {
-        try {
-            $stmt = $pdo->prepare('
-                INSERT INTO bg.materia_boletim (
-                    mate_bole_texto, 
-                    mate_bole_data, 
-                    fk_tipo_docu_cod, 
-                    fk_assu_espe_cod, 
-                    fk_assu_gera_cod,  
-                    mate_bole_nr_doc, 
-                    mate_bole_data_doc, 
-                    fk_subu_cod
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                RETURNING mate_bole_cod
-            ');
-            $stmt->execute([
-                $_POST['mate_bole_texto'], 
-                $_POST['mate_bole_data'], 
-                $_POST['fk_tipo_docu_cod'],
-                $_POST['fk_assu_espe_cod'], 
-                $_POST['fk_assu_gera_cod'], // ADICIONADO AQUI! 
-                $_POST['mate_bole_nr_doc'], 
-                $_POST['mate_bole_data_doc'], 
-                $_POST['fk_subu_cod']
-            ]);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            $mate_bole_cod = $result['mate_bole_cod'];
+// if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+//     if (isset($_POST['action']) && $_POST['action'] === 'add_materia') {
+//         try {
+//             $stmt = $pdo->prepare('
+//                 INSERT INTO bg.materia_boletim (
+//                     mate_bole_texto, 
+//                     mate_bole_data, 
+//                     fk_tipo_docu_cod, 
+//                     fk_assu_espe_cod, 
+//                     fk_assu_gera_cod,  
+//                     mate_bole_nr_doc, 
+//                     mate_bole_data_doc, 
+//                     fk_subu_cod
+//                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+//                 RETURNING mate_bole_cod
+//             ');
+//             $stmt->execute([
+//                 $_POST['mate_bole_texto'], 
+//                 $_POST['mate_bole_data'], 
+//                 $_POST['fk_tipo_docu_cod'],
+//                 $_POST['fk_assu_espe_cod'], 
+//                 $_POST['fk_assu_gera_cod'], // ADICIONADO AQUI! 
+//                 $_POST['mate_bole_nr_doc'], 
+//                 $_POST['mate_bole_data_doc'], 
+//                 $_POST['fk_subu_cod']
+//             ]);
+//             $result = $stmt->fetch(PDO::FETCH_ASSOC);
+//             $mate_bole_cod = $result['mate_bole_cod'];
 
-            if (!$mate_bole_cod) {
-                throw new Exception("Falha ao recuperar o código da Matéria.");
-            }
+//             if (!$mate_bole_cod) {
+//                 throw new Exception("Falha ao recuperar o código da Matéria.");
+//             }
 
-            $mensagem_sucesso = 'Matéria cadastrada com sucesso!';
-        } catch (PDOException $e) {
-            $mensagem_sucesso = ''; 
-            echo '<div class="alert alert-danger">Erro ao cadastrar a Matéria: ' . htmlspecialchars($e->getMessage()) . '</div>';
-        } catch (Exception $e) {
-            $mensagem_sucesso = ''; 
-            echo '<div class="alert alert-danger">Erro: ' . htmlspecialchars($e->getMessage()) . '</div>';
-        }
-    }
-}
+//             $mensagem_sucesso = 'Matéria cadastrada com sucesso!';
+//         } catch (PDOException $e) {
+//             $mensagem_sucesso = ''; 
+//             echo '<div class="alert alert-danger">Erro ao cadastrar a Matéria: ' . htmlspecialchars($e->getMessage()) . '</div>';
+//         } catch (Exception $e) {
+//             $mensagem_sucesso = ''; 
+//             echo '<div class="alert alert-danger">Erro: ' . htmlspecialchars($e->getMessage()) . '</div>';
+//         }
+//     }
+// }
+
+
+
 
 
 // Função para editar uma matéria
@@ -298,6 +301,62 @@ function buscarAssuntoGeralPorEspecifico($pdo, $assu_espe_cod) {
     }
 }
 
+function buscarPessoasAssociadas($pdo, $mate_bole_cod) {
+    try {
+        $sql = "
+            SELECT 
+                pm.pess_mate_cod,
+                pm.fk_mate_bole_cod,
+                pm.fk_poli_mili_matricula,
+                p.nome,
+                p.pg_descricao AS posto,
+                p.unidade
+            FROM bg.pessoa_materia pm
+            LEFT JOIN bg.vw_policiais_militares p 
+                ON pm.fk_poli_mili_matricula = p.matricula
+            WHERE pm.fk_mate_bole_cod = :mate_bole_cod
+            ORDER BY pm.pess_mate_data_inicio ASC
+        ";
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':mate_bole_cod', $mate_bole_cod, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Erro ao buscar pessoas associadas: " . $e->getMessage());
+        return [];
+    }
+}
 
+
+
+// 2. Buscar lista de postos/graduações para popular o dropdown
+function buscarPostosGraduacoes($pdo) {
+    try {
+        $stmt = $pdo->query("
+            SELECT DISTINCT id_pg, pg_descricao 
+            FROM bg.vw_policiais_militares
+            ORDER BY pg_descricao
+        ");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Erro ao buscar postos/graduações: " . $e->getMessage());
+        return [];
+    }
+}
+
+// 3. Buscar lista de unidades para popular o dropdown
+function buscarUnidades($pdo) {
+    try {
+        $stmt = $pdo->query("
+            SELECT DISTINCT cod_unidade, unidade 
+            FROM bg.vw_policiais_militares
+            ORDER BY unidade
+        ");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Erro ao buscar unidades: " . $e->getMessage());
+        return [];
+    }
+}
 ?>
 

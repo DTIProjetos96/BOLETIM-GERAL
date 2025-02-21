@@ -102,79 +102,26 @@ if ($_POST['action'] === 'buscar_policial_militar') {
 }
 
 
-// Recupera as opções para o campo Posto/Graduação
-function buscarPostosGraduacoes($pdo) {
-    try {
-        $stmt_pg = $pdo->query("SELECT DISTINCT pg_descricao FROM bg.vw_policiais_militares ORDER BY pg_descricao");
-        return $stmt_pg->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        error_log("Erro ao buscar postos/graduações: " . $e->getMessage());
-        return [];
-    }
-}
-
-// Busca as unidades para o datalist
-function buscarUnidades($pdo) {
-    try {
-        $stmt_unidades = $pdo->query("SELECT DISTINCT unidade FROM bg.vw_policiais_militares ORDER BY unidade");
-        return $stmt_unidades->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        error_log("Erro ao buscar unidades: " . $e->getMessage());
-        return [];
-    }
-}
-
-
-// if ($_POST['action'] === 'salvar_pessoa_materia') {
-//     $dados = [
-//         'buscaPolicial' => $_POST["buscaPolicial"],
-//         'postoGraduacao' => $_POST["postoGraduacao"],
-//         'unidade' => $_POST["unidade"],
-//         'mate_bole_cod' => $_POST["mate_bole_cod"],
-//         'dataInicial' => $_POST["dataInicial"] ?: '2000-01-01',
-//         'dataFinal' => $_POST["dataFinal"] ?: '2000-01-01',
-//         'anoBase' => $_POST["anoBase"] ?: 0
-//     ];
-
-//     $resultado = salvarPessoaMateria($pdo, $dados);
-//     echo json_encode($resultado);
-//     exit();
-// }
-
-
-// Função para salvar dados na tabela pessoa_materia
-// function salvarPessoaMateria($pdo, $dados) {
+// // Recupera as opções para o campo Posto/Graduação com ID e Descrição
+// function buscarPostosGraduacoes($pdo) {
 //     try {
-//         $sql = "INSERT INTO bg.pessoa_materia (
-//             fk_poli_mili_matricula, 
-//             fk_index_post_grad_cod, 
-//             fk_posto_grad_atual, 
-//             fk_poli_lota_cod, 
-//             fk_mate_bole_cod, 
-//             pess_mate_data_inicio, 
-//             pess_mate_data_fim, 
-//             pess_mate_anobase, 
-//             fk_tiat_cod
-//         ) VALUES (:fk_poli_mili_matricula, :fk_index_post_grad_cod, :fk_posto_grad_atual, :fk_poli_lota_cod, :fk_mate_bole_cod, :pess_mate_data_inicio, :pess_mate_data_fim, :pess_mate_anobase, :fk_tiat_cod)";
-
-//         $stmt = $pdo->prepare($sql);
-//         $stmt->execute([
-//             ':fk_poli_mili_matricula' => $dados['buscaPolicial'],
-//             ':fk_index_post_grad_cod' => $dados['postoGraduacao'],
-//             ':fk_posto_grad_atual' => $dados['postoGraduacao'],
-//             ':fk_poli_lota_cod' => $dados['unidade'],
-//             ':fk_mate_bole_cod' => $dados['mate_bole_cod'],
-//             ':pess_mate_data_inicio' => $dados['dataInicial'] ?: '2000-01-01',
-//             ':pess_mate_data_fim' => $dados['dataFinal'] ?: '2000-01-01',
-//             ':pess_mate_anobase' => $dados['anoBase'] ?: 0,
-//             ':fk_tiat_cod' => 1 // Valor padrão
-//         ]);
-
-//         return ['success' => true, 'message' => 'Cadastro realizado com sucesso!'];
+//         $stmt_pg = $pdo->query("SELECT DISTINCT id_pg, pg_descricao FROM bg.vw_policiais_militares ORDER BY pg_descricao");
+//         return $stmt_pg->fetchAll(PDO::FETCH_ASSOC);
 //     } catch (PDOException $e) {
-//         return ['success' => false, 'error' => 'Erro ao inserir dados: ' . $e->getMessage()];
+//         error_log("Erro ao buscar postos/graduações: " . $e->getMessage());
+//         return [];
 //     }
 // }
 
+// // Busca as unidades com código e unidade
+// function buscarUnidades($pdo) {
+//     try {
+//         $stmt_unidades = $pdo->query("SELECT DISTINCT cod_unidade, unidade FROM bg.vw_policiais_militares ORDER BY unidade");
+//         return $stmt_unidades->fetchAll(PDO::FETCH_ASSOC);
+//     } catch (PDOException $e) {
+//         error_log("Erro ao buscar unidades: " . $e->getMessage());
+//         return [];
+//     }
+// }
 
 ?> 

@@ -18,8 +18,7 @@ $tipos_documento = getTiposDocumento($pdo);
 // Chama a função para buscar os dados do policial
 $dadosPolicialResponse = buscarDadosPolicial($pdo, $matricula);
 
-// Chama a função para buscar o tipo de documento
-$tipos_documento = getTiposDocumento($pdo);
+$subunidades = getSubunidadesUsuario($pdo, $_SESSION['matricula']);
 
 // Se a sessão não estiver setada, redirecione ou trate de outra forma
 if (!isset($_SESSION['matricula'])) {
@@ -29,15 +28,7 @@ if (!isset($_SESSION['matricula'])) {
 // Agora pega a matrícula do usuário logado
 $user_login = $_SESSION['matricula'];
 
-$subunidades = getSubunidadesUsuario($pdo, $_SESSION['matricula']);
 
-// Verifica se é edição
-$mate_bole_cod = isset($_GET['mate_bole_cod']) ? (int)$_GET['mate_bole_cod'] : 0;
-
-// Inicializa o array da matéria
-$materia = [];
-
-// Se for edição, carrega os dados da matéria
 // Verifica se é edição
 $mate_bole_cod = isset($_GET['mate_bole_cod']) ? (int)$_GET['mate_bole_cod'] : 0;
 
@@ -62,6 +53,18 @@ if ($mate_bole_cod > 0) {
     }
 }
 
+// Se for edição, e $mate_bole_cod for maior que 0, busque as pessoas associadas:
+$pessoasAssociadas = ($mate_bole_cod > 0) ? buscarPessoasAssociadas($pdo, $mate_bole_cod) : [];
+
+// Aqui você insere a verificação para buscar as pessoas associadas:
+if ($mate_bole_cod > 0) {
+    $pessoasAssociadas = buscarPessoasAssociadas($pdo, $mate_bole_cod);
+    error_log("Pessoas associadas: " . print_r($pessoasAssociadas, true));
+} else {
+    $pessoasAssociadas = [];
+}
+
+
 
 // Atualizar os dados da matéria com a resposta do servidor, se existir
 if (isset($response['success']) && $response['success']) {
@@ -81,20 +84,18 @@ if (!empty($materia['mate_bole_data_doc'])) {
         $date_doc = ''; // Valor padrão se a data for inválida
     }
 }
+
 ?>
 
 <head>
     <script src="js/assunto_geral_especifico.js"></script>
     <!-- <script src="js/autocomplete.js"></script> -->
     <!-- <script src="js/associar_pessoa_materia.js"></script> -->
-    
-    
-
 </head>
 
 <form method="POST" action="cad.php" enctype="multipart/form-data">
     <?php if ($mate_bole_cod > 0): ?>
-        <input type="hidden" id ="mate_bole_cod" name="mate_bole_cod" value="<?php echo htmlspecialchars($mate_bole_cod); ?>">
+        <input type="hidden" id="mate_bole_cod" name="mate_bole_cod" value="<?php echo htmlspecialchars($mate_bole_cod); ?>">
     <?php endif; ?>
 
 
@@ -285,19 +286,33 @@ if (!empty($materia['mate_bole_data_doc'])) {
             <table class="table table-bordered" id="tabelaPessoas">
                 <thead>
                     <tr>
-
                         <th>Nome</th>
-                        <th>Posto/Graduação Atual</th>
+                        <th>Posto/Graduação</th>
                         <th>Unidade</th>
                         <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <!-- <td colspan="4" class="text-center">Nenhum registro encontrado.</td> -->
-                    </tr>
+                    <?php if (!empty($pessoasAssociadas)): ?>
+                        <?php foreach ($pessoasAssociadas as $pessoa): ?>
+                            <tr data-matricula="<?= htmlspecialchars($pessoa['fk_poli_mili_matricula']) ?>">
+                                <td><?= htmlspecialchars($pessoa['nome'] ?? 'N/D') ?></td>
+                                <td><?= htmlspecialchars($pessoa['posto'] ?? 'N/D') ?></td>
+                                <td><?= htmlspecialchars($pessoa['unidade'] ?? 'N/D') ?></td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm" onclick="excluirRegistro('<?= htmlspecialchars($pessoa['fk_poli_mili_matricula']) ?>')">Excluir</button>
+                                    <button class="btn btn-warning btn-sm btnEditar">Editar</button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr class="nenhum-registro">
+                            <td colspan="4" class="text-center">Nenhum registro encontrado.</td>
+                        </tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
+
         </fieldset>
     </div>
     <!-- <script src="js/associar_pessoa_materia.js"></script> -->
