@@ -91,6 +91,10 @@ if (!empty($materia['mate_bole_data_doc'])) {
     <script src="js/assunto_geral_especifico.js"></script>
     <!-- <script src="js/autocomplete.js"></script> -->
     <!-- <script src="js/associar_pessoa_materia.js"></script> -->
+
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+
 </head>
 
 <form method="POST" action="cad.php" enctype="multipart/form-data">
@@ -201,7 +205,14 @@ if (!empty($materia['mate_bole_data_doc'])) {
     <div class="row">
         <div class="col-md-12">
             <label for="mate_bole_texto" class="form-label">Texto da Matéria</label>
-            <textarea class="form-control" id="mate_bole_texto" name="mate_bole_texto" rows="5" required><?= htmlspecialchars($materia['mate_bole_texto'] ?? '') ?></textarea>
+
+            <!-- Aqui fica o container do editor Quill -->
+            <div id="editor-container"></div>
+
+            <!-- Este input hidden receberá o conteúdo HTML quando o formulário for submetido -->
+            <input type="hidden" id="mate_bole_texto" name="mate_bole_texto" required>
+
+            <!-- <textarea class="form-control" id="mate_bole_texto" name="mate_bole_texto" rows="5" required><?= htmlspecialchars($materia['mate_bole_texto'] ?? '') ?></textarea> -->
 
         </div>
     </div>
@@ -318,3 +329,35 @@ if (!empty($materia['mate_bole_data_doc'])) {
     <!-- <script src="js/associar_pessoa_materia.js"></script> -->
 
 </form> <!-- Mantém a estrutura do form corretamente -->
+
+
+<script>
+// Inicializa o editor Quill
+const quill = new Quill('#editor-container', {
+  theme: 'snow',
+  placeholder: 'Digite o texto da matéria aqui...',
+  modules: {
+    toolbar: [
+      [{ font: [] }, { size: [] }],
+      [{ header: [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ color: [] }, { background: [] }],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      [{ align: [] }],
+      ['link', 'image', 'video', 'blockquote', 'code-block'],
+      ['clean']
+    ]
+  }
+});
+
+// Se já existe texto salvo, insere no editor (perigoso, mas prático):
+quill.clipboard.dangerouslyPasteHTML(<?php echo json_encode($materia['mate_bole_texto'] ?? ''); ?>);
+
+/**
+ * Ao submeter o formulário, o conteúdo HTML do Quill
+ * será jogado para o input hidden #mate_bole_texto.
+ */
+document.querySelector('form').addEventListener('submit', function () {
+  document.getElementById('mate_bole_texto').value = quill.root.innerHTML;
+});
+</script>
