@@ -94,6 +94,9 @@ if (!empty($materia['mate_bole_data_doc'])) {
 
     <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+    <script src="https://unpkg.com/quill-image-resize-module@3.0.0/dist/quill-image-resize-module.min.js"></script>
+    
+
 
 </head>
 
@@ -332,10 +335,12 @@ if (!empty($materia['mate_bole_data_doc'])) {
 
 
 <script>
-// Inicializa o editor Quill
+// 1) Registre o módulo
+//Quill.register('modules/imageResize', ImageResize);
+
+// 2) Inicialize o Quill com 'imageResize' ativado
 const quill = new Quill('#editor-container', {
   theme: 'snow',
-  placeholder: 'Digite o texto da matéria aqui...',
   modules: {
     toolbar: [
       [{ font: [] }, { size: [] }],
@@ -346,18 +351,19 @@ const quill = new Quill('#editor-container', {
       [{ align: [] }],
       ['link', 'image', 'video', 'blockquote', 'code-block'],
       ['clean']
-    ]
+    ],
+    imageResize: {} // <--- IMPORTANTE
   }
 });
 
-// Se já existe texto salvo, insere no editor (perigoso, mas prático):
-quill.clipboard.dangerouslyPasteHTML(<?php echo json_encode($materia['mate_bole_texto'] ?? ''); ?>);
+// Se já existe texto HTML salvo, injeta no editor Quill:
+quill.clipboard.dangerouslyPasteHTML(
+  <?php echo json_encode($materia['mate_bole_texto'] ?? ''); ?>
+);
 
-/**
- * Ao submeter o formulário, o conteúdo HTML do Quill
- * será jogado para o input hidden #mate_bole_texto.
- */
+// Ao submeter, transfira o HTML para o input hidden:
 document.querySelector('form').addEventListener('submit', function () {
   document.getElementById('mate_bole_texto').value = quill.root.innerHTML;
 });
 </script>
+
